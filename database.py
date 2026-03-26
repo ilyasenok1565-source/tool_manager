@@ -13,12 +13,15 @@ def init_db():
                   qr_code TEXT UNIQUE NOT NULL,
                   status TEXT DEFAULT 'in_stock',
                   issued_to INTEGER,
-                  container TEXT)''')
+                  container TEXT,
+                  inventory_number TEXT,
+                  brand TEXT)''')
     c.execute('''CREATE TABLE IF NOT EXISTS employees
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
                   name TEXT NOT NULL,
                   tab_number TEXT UNIQUE NOT NULL,
-                  qr_code TEXT UNIQUE NOT NULL)''')
+                  qr_code TEXT UNIQUE NOT NULL,
+                  section TEXT)''')
     c.execute('''CREATE TABLE IF NOT EXISTS transactions
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
                   tool_id INTEGER NOT NULL,
@@ -30,28 +33,41 @@ def init_db():
                   username TEXT UNIQUE NOT NULL,
                   hashed_password TEXT NOT NULL,
                   role TEXT NOT NULL DEFAULT 'worker')''')
+    # Добавляем новые столбцы, если их нет
+    try:
+        c.execute("ALTER TABLE employees ADD COLUMN section TEXT")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        c.execute("ALTER TABLE tools ADD COLUMN inventory_number TEXT")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        c.execute("ALTER TABLE tools ADD COLUMN brand TEXT")
+    except sqlite3.OperationalError:
+        pass
     conn.commit()
     conn.close()
 
 def get_tool_by_qr(qr: str):
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
-    c.execute("SELECT id, name, qr_code, status, issued_to, container FROM tools WHERE qr_code=?", (qr,))
+    c.execute("SELECT id, name, qr_code, status, issued_to, container, inventory_number, brand FROM tools WHERE qr_code=?", (qr,))
     row = c.fetchone()
     conn.close()
     if row:
         return {"id": row[0], "name": row[1], "qr_code": row[2], "status": row[3],
-                "issued_to": row[4], "container": row[5]}
+                "issued_to": row[4], "container": row[5], "inventory_number": row[6], "brand": row[7]}
     return None
 
 def get_employee_by_qr(qr: str):
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
-    c.execute("SELECT id, name, tab_number, qr_code FROM employees WHERE qr_code=?", (qr,))
+    c.execute("SELECT id, name, tab_number, qr_code, section FROM employees WHERE qr_code=?", (qr,))
     row = c.fetchone()
     conn.close()
     if row:
-        return {"id": row[0], "name": row[1], "tab_number": row[2], "qr_code": row[3]}
+        return {"id": row[0], "name": row[1], "tab_number": row[2], "qr_code": row[3], "section": row[4]}
     return None
 
 def issue_tool(tool_id: int, employee_id: int):
@@ -86,18 +102,18 @@ def get_issued_tools():
 def get_all_tools():
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
-    c.execute("SELECT id, name, qr_code, status, container FROM tools")
+    c.execute("SELECT id, name, qr_code, status, container, inventory_number, brand FROM tools")
     rows = c.fetchall()
     conn.close()
-    return [{"id": r[0], "name": r[1], "qr_code": r[2], "status": r[3], "container": r[4]} for r in rows]
+    return [{"id": r[0], "name": r[1], "qr_code": r[2], "status": r[3], "container": r[4], "inventory_number": r[5], "brand": r[6]} for r in rows]
 
 def get_all_employees():
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
-    c.execute("SELECT id, name, tab_number, qr_code FROM employees")
+    c.execute("SELECT id, name, tab_number, qr_code, section FROM employees")
     rows = c.fetchall()
     conn.close()
-    return [{"id": r[0], "name": r[1], "tab_number": r[2], "qr_code": r[3]} for r in rows]
+    return [{"id": r[0], "name": r[1], "tab_number": r[2], "qr_code": r[3], "section": r[4]} for r in rows]
 
 def create_user(username: str, password: str, role: str = "worker"):
     hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
@@ -154,13 +170,13 @@ def insert_sample_data():
         c.executemany("INSERT INTO tools (name, qr_code) VALUES (?,?)", tools)
 
         employees = [
-            ("Иванов Сергей Юрьевич", "2432", "emp_2432"),
-            ("Каримов Ильдар Низамович", "4325", "emp_4325"),
-            ("Рашитов Артур Назирович", "6664", "emp_6664"),
-            ("Степанов Василий Иванович", "6269", "emp_6269"),
-            ("Лапега Сергей Юрьевич", "3212", "emp_3212"),
+            ("Иванов Сергей Юрьевич", "2432", "emp_2432", "Монтажный участок"),
+            ("Каримов Ильдар Низамович", "4325", "emp_4325", "Сварочный участок"),
+            ("Рашитов Артур Назирович", "6664", "emp_6664", "Монтажный участок"),
+            ("Степанов Василий Иванович", "6269", "emp_6269", "Такелажный участок"),
+            ("Лапега Сергей Юрьевич", "3212", "emp_3212", "Монтажный участок"),
         ]
-        c.executemany("INSERT INTO employees (name, tab_number, qr_code) VALUES (?,?,?)", employees)
+        c.executemany("INSERT INTO employees (name, tab_number, qr_code, section) VALUES (?,?,?,?)", employees)
         conn.commit()
     conn.close()
 
