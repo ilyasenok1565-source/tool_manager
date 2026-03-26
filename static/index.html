@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Складской учёт инструментов</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; transition: background 0.3s, color 0.2s; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background: var(--bg-color); color: var(--text-color); }
+        :root { --bg-color: #f0f2f5; --card-bg: white; --text-color: #1e2a3a; --border: #ddd; --primary: #007bff; --primary-hover: #0056b3; --success: #28a745; --danger: #dc3545; --gray: #6c757d; }
+        .dark { --bg-color: #1a1a2e; --card-bg: #16213e; --text-color: #eaeaea; --border: #2c3e50; --primary: #0f3460; --primary-hover: #1a508b; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .card { background: var(--card-bg); border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 20px; margin-bottom: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; }
+        h1 { margin: 0; font-size: 1.8rem; }
+        .theme-toggle { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-color); }
+        .logout-btn { background: var(--gray); color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; }
+        .tabs { display: flex; gap: 8px; border-bottom: 1px solid var(--border); margin-bottom: 20px; flex-wrap: wrap; }
+        .tab { padding: 10px 20px; cursor: pointer; border-radius: 12px 12px 0 0; background: var(--card-bg); color: var(--text-color); border: 1px solid var(--border); border-bottom: none; }
+        .tab.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .action-buttons { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+        .action-buttons button { flex: 1; padding: 12px; font-size: 1rem; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; color: white; }
+        .scanner { background: var(--card-bg); border-radius: 16px; padding: 20px; text-align: center; margin-bottom: 20px; border: 1px solid var(--border); }
+        video { width: 100%; max-width: 500px; border-radius: 12px; margin-top: 10px; }
+        .result { background: #e9ecef; padding: 12px; border-radius: 12px; margin: 10px 0; word-break: break-all; color: #1e2a3a; }
+        .tool-item { background: var(--card-bg); padding: 12px; margin: 8px 0; border-radius: 12px; border-left: 4px solid var(--success); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid var(--border); padding: 10px; text-align: left; }
+        th { background: var(--primary); color: white; }
+        .admin-form { background: var(--card-bg); padding: 20px; border-radius: 16px; margin-bottom: 20px; border: 1px solid var(--border); }
+        .admin-form input, .admin-form select { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-color); color: var(--text-color); }
+        button { background: var(--primary); color: white; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; }
+        button.danger { background: var(--danger); }
+        .footer { text-align: center; margin-top: 20px; font-size: 0.8rem; }
+        .login-container { max-width: 400px; margin: 100px auto; background: var(--card-bg); padding: 30px; border-radius: 24px; box-shadow: 0 8px 20px rgba(0,0,0,0.2); text-align: center; }
+        .login-container input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid var(--border); border-radius: 12px; background: var(--bg-color); color: var(--text-color); }
+        .error { color: var(--danger); margin-top: 10px; }
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            .card { padding: 15px; }
+            th, td { padding: 6px; font-size: 0.9rem; }
+            .tab { padding: 6px 12px; }
+            .action-buttons button { font-size: 0.9rem; }
+        }
+    </style>
+    <script src="https://unpkg.com/@zxing/library@0.19.1"></script>
+</head>
+<body>
+<div id="loginContainer" class="login-container">
+    <h2><i class="fas fa-tools"></i> Учёт инструментов</h2>
+    <input type="text" id="username" placeholder="Логин" autocomplete="username">
+    <input type="password" id="password" placeholder="Пароль" autocomplete="current-password">
+    <button id="loginBtn"><i class="fas fa-sign-in-alt"></i> Войти</button>
+    <div id="loginError" class="error"></div>
+</div>
+
+<div id="app" style="display:none;">
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                <h1><i class="fas fa-boxes"></i> Складской учёт</h1>
+                <div>
+                    <button class="theme-toggle" id="themeToggle"><i class="fas fa-moon"></i></button>
+                    <button id="logoutBtn" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Выйти</button>
+                </div>
+            </div>
+            <div class="tabs" id="tabs">
+                <div class="tab active" data-tab="main"><i class="fas fa-exchange-alt"></i> Выдача/возврат</div>
+                <div class="tab" data-tab="tools"><i class="fas fa-wrench"></i> Инструменты</div>
+                <div class="tab" data-tab="employees"><i class="fas fa-users"></i> Сотрудники</div>
+                <div class="tab admin-tab" data-tab="users" style="display:none;"><i class="fas fa-user-shield"></i> Пользователи</div>
+            </div>
+
+            <div id="tab-main" class="tab-content active">
+                <div class="action-buttons">
+                    <button id="btnIssue" style="background: var(--success);"><i class="fas fa-hand-holding"></i> Выдача</button>
+                    <button id="btnReturn" style="background: var(--danger);"><i class="fas fa-undo-alt"></i> Возврат</button>
+                </div>
+                <div id="scannerArea" class="scanner" style="display: none;">
+                    <div id="scannerControls">
+                        <button id="startScanner"><i class="fas fa-camera"></i> Запустить сканер</button>
+                        <button id="stopScanner" style="display:none;"><i class="fas fa-stop"></i> Остановить</button>
+                    </div>
+                    <video id="video" width="100%" style="display:none;"></video>
+                    <div id="scanResult" class="result"></div>
+                </div>
+                <div id="infoArea" class="result" style="display: none;"></div>
+                <div>
+                    <h3><i class="fas fa-list"></i> Выданные инструменты</h3>
+                    <div id="issuedList">Загрузка...</div>
+                </div>
+            </div>
+
+            <div id="tab-tools" class="tab-content">
+                <div class="admin-form">
+                    <h3><i class="fas fa-plus-circle"></i> Добавить инструмент</h3>
+                    <input type="text" id="newToolName" placeholder="Название инструмента">
+                    <input type="text" id="newToolContainer" placeholder="Контейнер (необязательно)">
+                    <button id="addToolBtn"><i class="fas fa-save"></i> Добавить</button>
+                </div>
+                <h3><i class="fas fa-tools"></i> Список инструментов</h3>
+                <div style="overflow-x: auto;">
+                    <table id="toolsTable">
+                        <thead><tr><th>ID</th><th>Название</th><th>Статус</th><th>Контейнер</th><th>QR</th><th>Действия</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="tab-employees" class="tab-content">
+                <div class="admin-form">
+                    <h3><i class="fas fa-user-plus"></i> Добавить сотрудника</h3>
+                    <input type="text" id="newEmpName" placeholder="ФИО">
+                    <input type="text" id="newEmpTab" placeholder="Табельный номер">
+                    <button id="addEmpBtn"><i class="fas fa-save"></i> Добавить</button>
+                </div>
+                <h3><i class="fas fa-users"></i> Список сотрудников</h3>
+                <div style="overflow-x: auto;">
+                    <table id="employeesTable">
+                        <thead><tr><th>ID</th><th>ФИО</th><th>Табельный</th><th>QR</th><th>Действия</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="tab-users" class="tab-content">
+                <div class="admin-form">
+                    <h3><i class="fas fa-user-plus"></i> Добавить пользователя</h3>
+                    <input type="text" id="newUserLogin" placeholder="Логин">
+                    <input type="password" id="newUserPass" placeholder="Пароль">
+                    <select id="newUserRole">
+                        <option value="worker">Кладовщик</option>
+                        <option value="admin">Администратор</option>
+                    </select>
+                    <button id="addUserBtn"><i class="fas fa-save"></i> Добавить</button>
+                </div>
+                <h3><i class="fas fa-users-cog"></i> Пользователи системы</h3>
+                <div style="overflow-x: auto;">
+                    <table id="usersTable">
+                        <thead><tr><th>ID</th><th>Логин</th><th>Роль</th><th>Действия</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="footer">
+            <i class="fas fa-qrcode"></i> QR-коды для печати: <a href="/qrcodes/" target="_blank">/qrcodes/</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Глобальные переменные
+    let currentMode = null;
+    let codeReader = null;
+    let scanning = false;
+    let currentUser = null;
+    let tempToolQR = null;
+
+    // DOM элементы
+    const loginContainer = document.getElementById('loginContainer');
+    const appContainer = document.getElementById('app');
+    const loginBtn = document.getElementById('loginBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const loginError = document.getElementById('loginError');
+    const issuedListDiv = document.getElementById('issuedList');
+    const btnIssue = document.getElementById('btnIssue');
+    const btnReturn = document.getElementById('btnReturn');
+    const scannerArea = document.getElementById('scannerArea');
+    const startScannerBtn = document.getElementById('startScanner');
+    const stopScannerBtn = document.getElementById('stopScanner');
+    const video = document.getElementById('video');
+    const scanResultDiv = document.getElementById('scanResult');
+    const infoArea = document.getElementById('infoArea');
+    const tabs = document.querySelectorAll('.tab');
+    const tabContents = document.querySelectorAll('.tab-content');
+    const themeToggle = document.getElementById('themeToggle');
+
+    // Админские элементы
+    const addToolBtn = document.getElementById('addToolBtn');
+    const addEmpBtn = document.getElementById('addEmpBtn');
+    const addUserBtn = document.getElementById('addUserBtn');
+    const toolsTableBody = document.querySelector('#toolsTable tbody');
+    const employeesTableBody = document.querySelector('#employeesTable tbody');
+    const usersTableBody = document.querySelector('#usersTable tbody');
+
+    // Тема
+    function initTheme() {
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            document.body.classList.add('dark');
+            themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+        } else {
+            document.body.classList.remove('dark');
+            themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
+        }
+    }
+    function toggleTheme() {
+        if (document.body.classList.contains('dark')) {
+            document.body.classList.remove('dark');
+            localStorage.setItem('theme', 'light');
+            themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem('theme', 'dark');
+            themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+        }
+    }
+    themeToggle.onclick = toggleTheme;
+
+    // Авторизация
+    async function checkAuth() {
+        try {
+            const resp = await fetch('/auth/me');
+            if (resp.ok) {
+                currentUser = await resp.json();
+                loginContainer.style.display = 'none';
+                appContainer.style.display = 'block';
+                if (currentUser.role === 'admin') {
+                    document.querySelector('.admin-tab').style.display = 'block';
+                } else {
+                    document.querySelector('.admin-tab').style.display = 'none';
+                }
+                loadIssued();
+                if (currentUser.role === 'admin') {
+                    loadTools();
+                    loadEmployees();
+                    loadUsers();
+                }
+                return true;
+            } else {
+                loginContainer.style.display = 'block';
+                appContainer.style.display = 'none';
+                return false;
+            }
+        } catch (err) {
+            loginContainer.style.display = 'block';
+            appContainer.style.display = 'none';
+            return false;
+        }
+    }
+
+    async function login() {
+        const username = usernameInput.value.trim();
+        const password = passwordInput.value;
+        if (!username || !password) {
+            loginError.textContent = 'Введите логин и пароль';
+            return;
+        }
+        loginError.textContent = '';
+        const formData = new URLSearchParams();
+        formData.append('username', username);
+        formData.append('password', password);
+        try {
+            const resp = await fetch('/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData
+            });
+            if (resp.ok) {
+                await checkAuth();
+            } else {
+                const err = await resp.json();
+                loginError.textContent = err.detail || 'Ошибка входа';
+            }
+        } catch (err) {
+            loginError.textContent = 'Ошибка соединения';
+        }
+    }
+
+    async function logout() {
+        await fetch('/auth/logout', { method: 'POST' });
+        currentUser = null;
+        loginContainer.style.display = 'block';
+        appContainer.style.display = 'none';
+        if (codeReader && scanning) codeReader.reset();
+    }
+
+    // Загрузка данных
+    async function loadIssued() {
+        try {
+            const resp = await fetch('/issued');
+            if (!resp.ok) throw new Error();
+            const data = await resp.json();
+            if (data.length === 0) {
+                issuedListDiv.innerHTML = 'Нет выданных инструментов';
+                return;
+            }
+            let html = '';
+            for (let item of data) {
+                html += `<div class="tool-item"><i class="fas fa-toolbox"></i> <strong>${item.tool_name}</strong><br>
+                        <i class="fas fa-user"></i> Выдан: ${item.employee_name} (таб. ${item.tab_number})<br>
+                        <i class="fas fa-archive"></i> Контейнер: ${item.container || 'не указан'}</div>`;
+            }
+            issuedListDiv.innerHTML = html;
+        } catch (err) {
+            issuedListDiv.innerHTML = 'Ошибка загрузки';
+        }
+    }
+
+    async function loadTools() {
+        const resp = await fetch('/admin/tools');
+        const tools = await resp.json();
+        toolsTableBody.innerHTML = '';
+        for (let tool of tools) {
+            const row = toolsTableBody.insertRow();
+            row.insertCell(0).textContent = tool.id;
+            row.insertCell(1).textContent = tool.name;
+            row.insertCell(2).textContent = tool.status === 'issued' ? 'Выдан' : 'На складе';
+            row.insertCell(3).textContent = tool.container || '';
+            row.insertCell(4).innerHTML = `<a href="/qrcodes/${tool.qr_code}.png" target="_blank"><i class="fas fa-qrcode"></i> QR</a>`;
+            const actions = row.insertCell(5);
+            const delBtn = document.createElement('button');
+            delBtn.innerHTML = '<i class="fas fa-trash"></i>';
+            delBtn.className = 'danger';
+            delBtn.onclick = () => deleteTool(tool.id);
+            actions.appendChild(delBtn);
+        }
+    }
+
+    async function deleteTool(id) {
+        if (!confirm('Удалить инструмент?')) return;
+        const resp = await fetch(`/admin/tools/${id}`, { method: 'DELETE' });
+        if (resp.ok) loadTools();
+        else alert((await resp.json()).detail);
+    }
+
+    async function addTool() {
+        const name = document.getElementById('newToolName').value.trim();
+        const container = document.getElementById('newToolContainer').value.trim();
+        if (!name) return alert('Введите название');
+        const resp = await fetch('/admin/tools', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, container })
+        });
+        if (resp.ok) {
+            document.getElementById('newToolName').value = '';
+            document.getElementById('newToolContainer').value = '';
+            loadTools();
+        } else alert((await resp.json()).detail);
+    }
+
+    async function loadEmployees() {
+        const resp = await fetch('/admin/employees');
+        const employees = await resp.json();
+        employeesTableBody.innerHTML = '';
+        for (let emp of employees) {
+            const row = employeesTableBody.insertRow();
+            row.insertCell(0).textContent = emp.id;
+            row.insertCell(1).textContent = emp.name;
+            row.insertCell(2).textContent = emp.tab_number;
+            row.insertCell(3).innerHTML = `<a href="/qrcodes/${emp.qr_code}.png" target="_blank"><i class="fas fa-qrcode"></i> QR</a>`;
+            const actions = row.insertCell(4);
+            const delBtn = document.createElement('button');
+            delBtn.innerHTML = '<i class="fas fa-trash"></i>';
+            delBtn.className = 'danger';
+            delBtn.onclick = () => deleteEmployee(emp.id);
+            actions.appendChild(delBtn);
+        }
+    }
+
+    async function deleteEmployee(id) {
+        if (!confirm('Удалить сотрудника?')) return;
+        const resp = await fetch(`/admin/employees/${id}`, { method: 'DELETE' });
+        if (resp.ok) loadEmployees();
+        else alert((await resp.json()).detail);
+    }
+
+    async function addEmployee() {
+        const name = document.getElementById('newEmpName').value.trim();
+        const tab = document.getElementById('newEmpTab').value.trim();
+        if (!name || !tab) return alert('Заполните все поля');
+        const resp = await fetch('/admin/employees', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, tab_number: tab })
+        });
+        if (resp.ok) {
+            document.getElementById('newEmpName').value = '';
+            document.getElementById('newEmpTab').value = '';
+            loadEmployees();
+        } else alert((await resp.json()).detail);
+    }
+
+    async function loadUsers() {
+        const resp = await fetch('/admin/users');
+        const users = await resp.json();
+        usersTableBody.innerHTML = '';
+        for (let user of users) {
+            const row = usersTableBody.insertRow();
+            row.insertCell(0).textContent = user.id;
+            row.insertCell(1).textContent = user.username;
+            row.insertCell(2).textContent = user.role === 'admin' ? 'Администратор' : 'Кладовщик';
+            const actions = row.insertCell(3);
+            const roleSelect = document.createElement('select');
+            roleSelect.innerHTML = '<option value="worker">Кладовщик</option><option value="admin">Администратор</option>';
+            roleSelect.value = user.role;
+            roleSelect.onchange = () => updateUserRole(user.id, roleSelect.value);
+            actions.appendChild(roleSelect);
+            const delBtn = document.createElement('button');
+            delBtn.innerHTML = '<i class="fas fa-trash"></i>';
+            delBtn.className = 'danger';
+            delBtn.onclick = () => deleteUser(user.id);
+            actions.appendChild(delBtn);
+        }
+    }
+
+    async function updateUserRole(userId, newRole) {
+        const resp = await fetch(`/admin/users/${userId}/role`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ role: newRole })
+        });
+        if (resp.ok) loadUsers();
+        else alert((await resp.json()).detail);
+    }
+
+    async function deleteUser(userId) {
+        if (!confirm('Удалить пользователя?')) return;
+        const resp = await fetch(`/admin/users/${userId}`, { method: 'DELETE' });
+        if (resp.ok) loadUsers();
+        else alert((await resp.json()).detail);
+    }
+
+    async function addUser() {
+        const username = document.getElementById('newUserLogin').value.trim();
+        const password = document.getElementById('newUserPass').value;
+        const role = document.getElementById('newUserRole').value;
+        if (!username || !password) return alert('Заполните логин и пароль');
+        const resp = await fetch('/admin/users', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password, role })
+        });
+        if (resp.ok) {
+            document.getElementById('newUserLogin').value = '';
+            document.getElementById('newUserPass').value = '';
+            loadUsers();
+        } else alert((await resp.json()).detail);
+    }
+
+    // Сканер
+    function stopScanner() {
+        if (codeReader && scanning) {
+            codeReader.reset();
+            scanning = false;
+        }
+        video.style.display = 'none';
+        startScannerBtn.style.display = 'inline-block';
+        stopScannerBtn.style.display = 'none';
+        scanResultDiv.innerHTML = '';
+        scannerArea.style.display = 'none';
+    }
+
+    function startScanner() {
+        if (!codeReader) codeReader = new ZXing.BrowserMultiFormatReader();
+        codeReader.listVideoInputDevices()
+            .then(videoInputDevices => {
+                if (videoInputDevices.length === 0) {
+                    showInfo('Не найдена камера', true);
+                    return;
+                }
+                const firstDeviceId = videoInputDevices[0].deviceId;
+                video.style.display = 'block';
+                codeReader.decodeFromVideoDevice(firstDeviceId, video, (result, err) => {
+                    if (result) {
+                        const text = result.getText();
+                        scanResultDiv.innerHTML = `<i class="fas fa-check-circle"></i> Отсканировано: ${text}`;
+                        handleScan(text);
+                        stopScanner();
+                    }
+                    if (err && !(err instanceof ZXing.NotFoundException)) console.error(err);
+                });
+                scanning = true;
+                startScannerBtn.style.display = 'none';
+                stopScannerBtn.style.display = 'inline-block';
+            })
+            .catch(err => {
+                console.error(err);
+                showInfo('Ошибка доступа к камере', true);
+            });
+    }
+
+    async function handleScan(scannedText) {
+        if (currentMode === 'issue') {
+            if (!tempToolQR) {
+                tempToolQR = scannedText;
+                scanResultDiv.innerHTML += `<br>📦 Инструмент принят. Теперь отсканируйте сотрудника.`;
+            } else {
+                const toolQR = tempToolQR;
+                const employeeQR = scannedText;
+                try {
+                    const resp = await fetch('/issue', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ tool_qr: toolQR, employee_qr: employeeQR })
+                    });
+                    const data = await resp.json();
+                    if (resp.ok) {
+                        showInfo(data.message);
+                        loadIssued();
+                        if (currentUser.role === 'admin') loadTools();
+                    } else {
+                        showInfo(data.detail || 'Ошибка', true);
+                    }
+                } catch (err) {
+                    showInfo('Ошибка сервера', true);
+                }
+                tempToolQR = null;
+                currentMode = null;
+                scannerArea.style.display = 'none';
+            }
+        } else if (currentMode === 'return') {
+            try {
+                const resp = await fetch('/return', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tool_qr: scannedText })
+                });
+                const data = await resp.json();
+                if (resp.ok) {
+                    showInfo(data.message);
+                    loadIssued();
+                    if (currentUser.role === 'admin') loadTools();
+                } else {
+                    showInfo(data.detail || 'Ошибка', true);
+                }
+            } catch (err) {
+                showInfo('Ошибка сервера', true);
+            }
+            currentMode = null;
+            scannerArea.style.display = 'none';
+        }
+    }
+
+    function showInfo(message, isError = false) {
+        infoArea.style.display = 'block';
+        infoArea.style.backgroundColor = isError ? '#f8d7da' : '#d4edda';
+        infoArea.style.color = isError ? '#721c24' : '#155724';
+        infoArea.innerHTML = `<i class="fas ${isError ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i> ${message}`;
+        setTimeout(() => { infoArea.style.display = 'none'; }, 3000);
+    }
+
+    // Переключение вкладок
+    function switchTab(tabId) {
+        tabContents.forEach(content => content.classList.remove('active'));
+        document.getElementById(`tab-${tabId}`).classList.add('active');
+        tabs.forEach(t => t.classList.remove('active'));
+        document.querySelector(`.tab[data-tab="${tabId}"]`).classList.add('active');
+        if (tabId === 'tools' && currentUser?.role === 'admin') loadTools();
+        if (tabId === 'employees' && currentUser?.role === 'admin') loadEmployees();
+        if (tabId === 'users' && currentUser?.role === 'admin') loadUsers();
+    }
+
+    // Обработчики
+    btnIssue.onclick = () => {
+        currentMode = 'issue';
+        tempToolQR = null;
+        scannerArea.style.display = 'block';
+        startScanner();
+    };
+    btnReturn.onclick = () => {
+        currentMode = 'return';
+        scannerArea.style.display = 'block';
+        startScanner();
+    };
+    startScannerBtn.onclick = startScanner;
+    stopScannerBtn.onclick = stopScanner;
+    loginBtn.onclick = login;
+    logoutBtn.onclick = logout;
+    if (addToolBtn) addToolBtn.onclick = addTool;
+    if (addEmpBtn) addEmpBtn.onclick = addEmployee;
+    if (addUserBtn) addUserBtn.onclick = addUser;
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const tabId = tab.getAttribute('data-tab');
+            if (tabId === 'users' && currentUser?.role !== 'admin') return;
+            switchTab(tabId);
+        });
+    });
+
+    // Автообновление
+    setInterval(() => {
+        if (appContainer.style.display !== 'none') {
+            loadIssued();
+            if (currentUser?.role === 'admin') {
+                const activeTab = document.querySelector('.tab-content.active').id;
+                if (activeTab === 'tab-tools') loadTools();
+                if (activeTab === 'tab-employees') loadEmployees();
+                if (activeTab === 'tab-users') loadUsers();
+            }
+        }
+    }, 5000);
+
+    initTheme();
+    checkAuth();
+</script>
+</body>
+</html>
