@@ -4,18 +4,24 @@ from typing import Optional
 class ToolCreate(BaseModel):
     name: str
     container: Optional[str] = None
+    inventory_number: Optional[str] = None
+    brand: Optional[str] = None
 
 class ToolUpdate(BaseModel):
     name: Optional[str] = None
     container: Optional[str] = None
+    inventory_number: Optional[str] = None
+    brand: Optional[str] = None
 
 class EmployeeCreate(BaseModel):
     name: str
     tab_number: str
+    section: Optional[str] = None
 
 class EmployeeUpdate(BaseModel):
     name: Optional[str] = None
     tab_number: Optional[str] = None
+    section: Optional[str] = None
 
 class UserCreate(BaseModel):
     username: str
