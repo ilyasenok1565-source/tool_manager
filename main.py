@@ -5,7 +5,7 @@ from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Depends, Response, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 import qrcode
@@ -55,6 +55,42 @@ async def get_current_user_from_cookie(request: Request):
 @app.get("/")
 async def root():
     return FileResponse("static/index.html")
+
+@app.get("/qrcodes/", response_class=HTMLResponse)
+async def list_qrcodes():
+    files = os.listdir("qrcodes")
+    files = [f for f in files if f.endswith(".png")]
+    files.sort()
+    html = """
+    <html>
+    <head><title>QR-коды для печати</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #0a1f44; color: white; }
+        .qr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+        .qr-item { text-align: center; border: 1px solid #ccc; padding: 10px; border-radius: 8px; background: #1e2a3a; }
+        img { max-width: 150px; height: auto; }
+        a { text-decoration: none; color: #ffcc00; }
+    </style>
+    </head>
+    <body>
+    <h1>QR-коды для печати</h1>
+    <div class="qr-grid">
+    """
+    for f in files:
+        html += f"""
+        <div class="qr-item">
+            <a href="/qrcodes/{f}" target="_blank">
+                <img src="/qrcodes/{f}" alt="{f}"><br>
+                {f}
+            </a>
+        </div>
+        """
+    html += """
+    </div>
+    </body>
+    </html>
+    """
+    return html
 
 @app.post("/auth/login")
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
@@ -114,7 +150,7 @@ async def return_tool(req: ReturnRequest, user = Depends(get_current_user_from_c
     database.return_tool(tool["id"])
     return {"message": f"Инструмент '{tool['name']}' возвращён"}
 
-# Админские эндпоинты
+# ==================== Админские эндпоинты ====================
 @app.get("/admin/tools")
 async def get_all_tools_admin(user = Depends(get_current_user_from_cookie)):
     if user["role"] != "admin":
@@ -131,8 +167,8 @@ async def create_tool(tool: ToolCreate, user = Depends(get_current_user_from_coo
     max_id = c.fetchone()[0] or 0
     new_id = max_id + 1
     qr_code = f"tool_{new_id}"
-    c.execute("INSERT INTO tools (name, qr_code, container) VALUES (?,?,?)",
-              (tool.name, qr_code, tool.container))
+    c.execute("INSERT INTO tools (name, qr_code, container, inventory_number, brand) VALUES (?,?,?,?,?)",
+              (tool.name, qr_code, tool.container, tool.inventory_number, tool.brand))
     conn.commit()
     conn.close()
     img = qrcode.make(qr_code)
@@ -156,6 +192,12 @@ async def update_tool(tool_id: int, tool: ToolUpdate, user = Depends(get_current
     if tool.container is not None:
         updates.append("container=?")
         params.append(tool.container)
+    if tool.inventory_number is not None:
+        updates.append("inventory_number=?")
+        params.append(tool.inventory_number)
+    if tool.brand is not None:
+        updates.append("brand=?")
+        params.append(tool.brand)
     if updates:
         params.append(tool_id)
         c.execute(f"UPDATE tools SET {', '.join(updates)} WHERE id=?", params)
@@ -194,8 +236,8 @@ async def create_employee(emp: EmployeeCreate, user = Depends(get_current_user_f
     conn = sqlite3.connect(database.DB_NAME)
     c = conn.cursor()
     try:
-        c.execute("INSERT INTO employees (name, tab_number, qr_code) VALUES (?,?,?)",
-                  (emp.name, emp.tab_number, qr_code))
+        c.execute("INSERT INTO employees (name, tab_number, qr_code, section) VALUES (?,?,?,?)",
+                  (emp.name, emp.tab_number, qr_code, emp.section))
         conn.commit()
     except sqlite3.IntegrityError:
         raise HTTPException(status_code=400, detail="Сотрудник с таким табельным номером уже существует")
@@ -225,6 +267,9 @@ async def update_employee(emp_id: int, emp: EmployeeUpdate, user = Depends(get_c
         new_qr = f"emp_{emp.tab_number}"
         updates.append("qr_code=?")
         params.append(new_qr)
+    if emp.section is not None:
+        updates.append("section=?")
+        params.append(emp.section)
     if updates:
         params.append(emp_id)
         c.execute(f"UPDATE employees SET {', '.join(updates)} WHERE id=?", params)
@@ -295,44 +340,21 @@ async def delete_user(user_id: int, current_user = Depends(get_current_user_from
     conn.commit()
     conn.close()
     return {"message": "Пользователь удалён"}
-    import os
-from fastapi.responses import HTMLResponse
 
-@app.get("/qrcodes/", response_class=HTMLResponse)
-async def list_qrcodes():
-    files = os.listdir("qrcodes")
-    files = [f for f in files if f.endswith(".png")]
-    files.sort()
-    html = """
-    <html>
-    <head><title>QR-коды для печати</title>
-    <style>
-        body { font-family: Arial; padding: 20px; }
-        .qr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
-        .qr-item { text-align: center; border: 1px solid #ccc; padding: 10px; border-radius: 8px; }
-        img { max-width: 150px; height: auto; }
-        a { text-decoration: none; color: #007bff; }
-    </style>
-    </head>
-    <body>
-    <h1>QR-коды для печати</h1>
-    <div class="qr-grid">
-    """
-    for f in files:
-        html += f"""
-        <div class="qr-item">
-            <a href="/qrcodes/{f}" target="_blank">
-                <img src="/qrcodes/{f}" alt="{f}"><br>
-                {f}
-            </a>
-        </div>
-        """
-    html += """
-    </div>
-    </body>
-    </html>
-    """
-    return html
+@app.get("/employee_history/{employee_id}")
+async def get_employee_history(employee_id: int, user = Depends(get_current_user_from_cookie)):
+    conn = sqlite3.connect(database.DB_NAME)
+    c = conn.cursor()
+    c.execute('''
+        SELECT tools.name AS tool_name, transactions.action, transactions.timestamp, tools.container
+        FROM transactions
+        JOIN tools ON transactions.tool_id = tools.id
+        WHERE transactions.employee_id = ?
+        ORDER BY transactions.timestamp DESC
+    ''', (employee_id,))
+    rows = c.fetchall()
+    conn.close()
+    return [{"tool_name": r[0], "action": r[1], "timestamp": r[2], "container": r[3]} for r in rows]
 
 @app.on_event("startup")
 def generate_qr_codes():
