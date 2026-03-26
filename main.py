@@ -295,6 +295,44 @@ async def delete_user(user_id: int, current_user = Depends(get_current_user_from
     conn.commit()
     conn.close()
     return {"message": "Пользователь удалён"}
+    import os
+from fastapi.responses import HTMLResponse
+
+@app.get("/qrcodes/", response_class=HTMLResponse)
+async def list_qrcodes():
+    files = os.listdir("qrcodes")
+    files = [f for f in files if f.endswith(".png")]
+    files.sort()
+    html = """
+    <html>
+    <head><title>QR-коды для печати</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .qr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+        .qr-item { text-align: center; border: 1px solid #ccc; padding: 10px; border-radius: 8px; }
+        img { max-width: 150px; height: auto; }
+        a { text-decoration: none; color: #007bff; }
+    </style>
+    </head>
+    <body>
+    <h1>QR-коды для печати</h1>
+    <div class="qr-grid">
+    """
+    for f in files:
+        html += f"""
+        <div class="qr-item">
+            <a href="/qrcodes/{f}" target="_blank">
+                <img src="/qrcodes/{f}" alt="{f}"><br>
+                {f}
+            </a>
+        </div>
+        """
+    html += """
+    </div>
+    </body>
+    </html>
+    """
+    return html
 
 @app.on_event("startup")
 def generate_qr_codes():
