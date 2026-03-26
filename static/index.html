@@ -6,55 +6,254 @@
     <title>Складской учёт инструментов</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        /* стили остаются без изменений */
-        * { box-sizing: border-box; transition: background 0.3s, color 0.2s; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background: var(--bg-color); color: var(--text-color); }
-        :root { --bg-color: #f0f2f5; --card-bg: white; --text-color: #1e2a3a; --border: #ddd; --primary: #007bff; --primary-hover: #0056b3; --success: #28a745; --danger: #dc3545; --gray: #6c757d; }
-        .dark { --bg-color: #1a1a2e; --card-bg: #16213e; --text-color: #eaeaea; --border: #2c3e50; --primary: #0f3460; --primary-hover: #1a508b; }
+        * {
+            box-sizing: border-box;
+            transition: background 0.3s, color 0.2s;
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #0a1f44;
+            color: #eaeaea;
+        }
         .container { max-width: 1200px; margin: 0 auto; }
-        .card { background: var(--card-bg); border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 20px; margin-bottom: 20px; }
-        .header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; }
-        h1 { margin: 0; font-size: 1.8rem; }
-        .theme-toggle { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-color); }
-        .logout-btn { background: var(--gray); color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; }
-        .tabs { display: flex; gap: 8px; border-bottom: 1px solid var(--border); margin-bottom: 20px; flex-wrap: wrap; }
-        .tab { padding: 10px 20px; cursor: pointer; border-radius: 12px 12px 0 0; background: var(--card-bg); color: var(--text-color); border: 1px solid var(--border); border-bottom: none; }
-        .tab.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .card {
+            background: #1e2a3a;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            margin: 0;
+            font-size: 1.8rem;
+            color: #ffcc00;
+        }
+        .theme-toggle {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #ffcc00;
+        }
+        .logout-btn, .qr-link {
+            background: #2c3e50;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 0.9rem;
+        }
+        .qr-link {
+            background: #27ae60;
+            margin-right: 10px;
+        }
+        .tabs {
+            display: flex;
+            gap: 8px;
+            border-bottom: 1px solid #2c3e50;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 12px 12px 0 0;
+            background: #2c3e50;
+            color: #eaeaea;
+            border: 1px solid #2c3e50;
+            border-bottom: none;
+        }
+        .tab.active {
+            background: #ffcc00;
+            color: #0a1f44;
+            border-color: #ffcc00;
+        }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-        .action-buttons { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
-        .action-buttons button { flex: 1; padding: 12px; font-size: 1rem; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; color: white; }
-        .scanner { background: var(--card-bg); border-radius: 16px; padding: 20px; text-align: center; margin-bottom: 20px; border: 1px solid var(--border); }
-        .camera-controls { display: flex; gap: 10px; justify-content: center; margin-bottom: 10px; }
-        video { width: 100%; max-width: 500px; border-radius: 12px; margin-top: 10px; }
-        .result { background: #e9ecef; padding: 12px; border-radius: 12px; margin: 10px 0; word-break: break-all; color: #1e2a3a; }
-        .tool-item { background: var(--card-bg); padding: 12px; margin: 8px 0; border-radius: 12px; border-left: 4px solid var(--success); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid var(--border); padding: 10px; text-align: left; }
-        th { background: var(--primary); color: white; }
-        .admin-form { background: var(--card-bg); padding: 20px; border-radius: 16px; margin-bottom: 20px; border: 1px solid var(--border); }
-        .admin-form input, .admin-form select { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-color); color: var(--text-color); }
-        button { background: var(--primary); color: white; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; }
-        button.danger { background: var(--danger); }
-        .footer { text-align: center; margin-top: 20px; font-size: 0.8rem; }
-        .login-container { max-width: 400px; margin: 100px auto; background: var(--card-bg); padding: 30px; border-radius: 24px; box-shadow: 0 8px 20px rgba(0,0,0,0.2); text-align: center; }
-        .login-container input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid var(--border); border-radius: 12px; background: var(--bg-color); color: var(--text-color); }
-        .error { color: var(--danger); margin-top: 10px; }
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .action-buttons button {
+            flex: 1;
+            padding: 12px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+        }
+        .scanner {
+            background: #2c3e50;
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            border: 1px solid #3e5a6b;
+        }
+        .camera-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+        video {
+            width: 100%;
+            max-width: 500px;
+            border-radius: 12px;
+            margin-top: 10px;
+        }
+        .result {
+            background: #0a1f44;
+            padding: 12px;
+            border-radius: 12px;
+            margin: 10px 0;
+            word-break: break-all;
+            color: #eaeaea;
+        }
+        .tool-item {
+            background: #2c3e50;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 12px;
+            border-left: 4px solid #27ae60;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            background: #2c3e50;
+            color: #eaeaea;
+        }
+        th, td {
+            border: 1px solid #3e5a6b;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background: #ffcc00;
+            color: #0a1f44;
+        }
+        .admin-form {
+            background: #2c3e50;
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            border: 1px solid #3e5a6b;
+        }
+        .admin-form input, .admin-form select {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            border: 1px solid #3e5a6b;
+            border-radius: 8px;
+            background: #0a1f44;
+            color: #eaeaea;
+        }
+        button {
+            background: #ffcc00;
+            color: #0a1f44;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button.danger {
+            background: #e74c3c;
+            color: white;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.8rem;
+        }
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+            background: #1e2a3a;
+            padding: 30px;
+            border-radius: 24px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        .login-container input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #3e5a6b;
+            border-radius: 12px;
+            background: #0a1f44;
+            color: #eaeaea;
+        }
+        .error { color: #e74c3c; margin-top: 10px; }
+        .search-box {
+            margin-bottom: 15px;
+            width: 100%;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid #3e5a6b;
+            background: #0a1f44;
+            color: #eaeaea;
+        }
+        .clickable-name {
+            cursor: pointer;
+            color: #ffcc00;
+            text-decoration: underline;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: #1e2a3a;
+            padding: 20px;
+            border-radius: 16px;
+            max-width: 90%;
+            width: 500px;
+            max-height: 80%;
+            overflow-y: auto;
+            color: #eaeaea;
+        }
+        .modal-content h3 { margin-top: 0; color: #ffcc00; }
+        .modal-content table { width: 100%; margin-top: 10px; }
+        .close-modal {
+            float: right;
+            cursor: pointer;
+            font-size: 24px;
+            color: #ffcc00;
+        }
         @media (max-width: 768px) {
             body { padding: 10px; }
             .card { padding: 15px; }
             th, td { padding: 6px; font-size: 0.9rem; }
             .tab { padding: 6px 12px; }
             .action-buttons button { font-size: 0.9rem; }
-        }
-        /* Стиль для кнопки удаления в строке */
-        .action-buttons-row {
-            display: flex;
-            justify-content: flex-end;
-            gap: 8px;
-        }
-        td:last-child {
-            text-align: right;
         }
     </style>
     <script src="https://unpkg.com/@zxing/library@0.19.1"></script>
@@ -74,6 +273,7 @@
             <div class="header">
                 <h1><i class="fas fa-boxes"></i> Складской учёт</h1>
                 <div>
+                    <a href="/qrcodes/" target="_blank" class="qr-link"><i class="fas fa-qrcode"></i> QR-коды для печати</a>
                     <button class="theme-toggle" id="themeToggle"><i class="fas fa-moon"></i></button>
                     <button id="logoutBtn" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Выйти</button>
                 </div>
@@ -87,8 +287,8 @@
 
             <div id="tab-main" class="tab-content active">
                 <div class="action-buttons">
-                    <button id="btnIssue" style="background: var(--success);"><i class="fas fa-hand-holding"></i> Выдача</button>
-                    <button id="btnReturn" style="background: var(--danger);"><i class="fas fa-undo-alt"></i> Возврат</button>
+                    <button id="btnIssue" style="background: #27ae60;"><i class="fas fa-hand-holding"></i> Выдача</button>
+                    <button id="btnReturn" style="background: #e74c3c;"><i class="fas fa-undo-alt"></i> Возврат</button>
                 </div>
                 <div id="scannerArea" class="scanner" style="display: none;">
                     <div class="camera-controls">
@@ -108,6 +308,8 @@
                 <div class="admin-form">
                     <h3><i class="fas fa-plus-circle"></i> Добавить инструмент</h3>
                     <input type="text" id="newToolName" placeholder="Название инструмента">
+                    <input type="text" id="newToolInventory" placeholder="Инвентарный номер (необязательно)">
+                    <input type="text" id="newToolBrand" placeholder="Бренд (необязательно)">
                     <input type="text" id="newToolContainer" placeholder="Контейнер (необязательно)">
                     <button id="addToolBtn"><i class="fas fa-save"></i> Добавить</button>
                 </div>
@@ -115,7 +317,7 @@
                 <div style="overflow-x: auto;">
                     <table id="toolsTable">
                         <thead>
-                            <tr><th>ID</th><th>Название</th><th>Статус</th><th>Контейнер</th><th>QR</th><th></th></tr>
+                            <tr><th>ID</th><th>Название</th><th>Инв. номер</th><th>Бренд</th><th>Статус</th><th>QR</th><th></th></tr>
                         </thead>
                         <tbody></tbody>
                     </table>
@@ -127,13 +329,15 @@
                     <h3><i class="fas fa-user-plus"></i> Добавить сотрудника</h3>
                     <input type="text" id="newEmpName" placeholder="ФИО">
                     <input type="text" id="newEmpTab" placeholder="Табельный номер">
+                    <input type="text" id="newEmpSection" placeholder="Участок (необязательно)">
                     <button id="addEmpBtn"><i class="fas fa-save"></i> Добавить</button>
                 </div>
                 <h3><i class="fas fa-users"></i> Список сотрудников</h3>
+                <input type="text" id="employeeSearch" class="search-box" placeholder="🔍 Поиск по ФИО, табельному, участку">
                 <div style="overflow-x: auto;">
                     <table id="employeesTable">
                         <thead>
-                            <tr><th>ID</th><th>ФИО</th><th>Табельный</th><th>QR</th><th></th></tr>
+                            <tr><th>ID</th><th>ФИО</th><th>Табельный</th><th>Участок</th><th>QR</th><th></th></tr>
                         </thead>
                         <tbody></tbody>
                     </table>
@@ -163,8 +367,16 @@
             </div>
         </div>
         <div class="footer">
-            <i class="fas fa-qrcode"></i> QR-коды для печати: <a href="/qrcodes/" target="_blank">/qrcodes/</a>
+            <i class="fas fa-qrcode"></i> QR-коды для печати доступны по ссылке в шапке
         </div>
+    </div>
+</div>
+
+<div id="historyModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <h3 id="modalTitle">История выдач</h3>
+        <div id="modalHistoryList">Загрузка...</div>
     </div>
 </div>
 
@@ -197,6 +409,7 @@
     const tabContents = document.querySelectorAll('.tab-content');
     const themeToggle = document.getElementById('themeToggle');
     const switchCameraBtn = document.getElementById('switchCameraBtn');
+    const employeeSearch = document.getElementById('employeeSearch');
 
     // Админские элементы
     const addToolBtn = document.getElementById('addToolBtn');
@@ -205,6 +418,12 @@
     const toolsTableBody = document.querySelector('#toolsTable tbody');
     const employeesTableBody = document.querySelector('#employeesTable tbody');
     const usersTableBody = document.querySelector('#usersTable tbody');
+
+    // Модальное окно
+    const modal = document.getElementById('historyModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalHistoryList = document.getElementById('modalHistoryList');
+    const closeModal = document.querySelector('.close-modal');
 
     // Тема
     function initTheme() {
@@ -328,10 +547,11 @@
             const row = toolsTableBody.insertRow();
             row.insertCell(0).textContent = tool.id;
             row.insertCell(1).textContent = tool.name;
-            row.insertCell(2).textContent = tool.status === 'issued' ? 'Выдан' : 'На складе';
-            row.insertCell(3).textContent = tool.container || '';
-            row.insertCell(4).innerHTML = `<a href="/qrcodes/${tool.qr_code}.png" target="_blank"><i class="fas fa-qrcode"></i> QR</a>`;
-            const actionsCell = row.insertCell(5);
+            row.insertCell(2).textContent = tool.inventory_number || '';
+            row.insertCell(3).textContent = tool.brand || '';
+            row.insertCell(4).textContent = tool.status === 'issued' ? 'Выдан' : 'На складе';
+            row.insertCell(5).innerHTML = `<a href="/qrcodes/${tool.qr_code}.png" target="_blank"><i class="fas fa-qrcode"></i> QR</a>`;
+            const actionsCell = row.insertCell(6);
             const delBtn = document.createElement('button');
             delBtn.innerHTML = '<i class="fas fa-trash"></i>';
             delBtn.className = 'danger';
@@ -349,15 +569,19 @@
 
     async function addTool() {
         const name = document.getElementById('newToolName').value.trim();
+        const inventory = document.getElementById('newToolInventory').value.trim();
+        const brand = document.getElementById('newToolBrand').value.trim();
         const container = document.getElementById('newToolContainer').value.trim();
         if (!name) return alert('Введите название');
         const resp = await fetch('/admin/tools', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, container })
+            body: JSON.stringify({ name, inventory_number: inventory, brand, container })
         });
         if (resp.ok) {
             document.getElementById('newToolName').value = '';
+            document.getElementById('newToolInventory').value = '';
+            document.getElementById('newToolBrand').value = '';
             document.getElementById('newToolContainer').value = '';
             loadTools();
         } else alert((await resp.json()).detail);
@@ -365,21 +589,63 @@
 
     async function loadEmployees() {
         const resp = await fetch('/admin/employees');
-        const employees = await resp.json();
+        let employees = await resp.json();
+        const searchTerm = employeeSearch ? employeeSearch.value.toLowerCase() : '';
+        if (searchTerm) {
+            employees = employees.filter(emp =>
+                emp.name.toLowerCase().includes(searchTerm) ||
+                emp.tab_number.toLowerCase().includes(searchTerm) ||
+                (emp.section && emp.section.toLowerCase().includes(searchTerm))
+            );
+        }
         employeesTableBody.innerHTML = '';
         for (let emp of employees) {
             const row = employeesTableBody.insertRow();
             row.insertCell(0).textContent = emp.id;
-            row.insertCell(1).textContent = emp.name;
+            const nameCell = row.insertCell(1);
+            nameCell.innerHTML = `<span class="clickable-name" data-id="${emp.id}" data-name="${emp.name}">${emp.name}</span>`;
             row.insertCell(2).textContent = emp.tab_number;
-            row.insertCell(3).innerHTML = `<a href="/qrcodes/${emp.qr_code}.png" target="_blank"><i class="fas fa-qrcode"></i> QR</a>`;
-            const actionsCell = row.insertCell(4);
+            row.insertCell(3).textContent = emp.section || '';
+            row.insertCell(4).innerHTML = `<a href="/qrcodes/${emp.qr_code}.png" target="_blank"><i class="fas fa-qrcode"></i> QR</a>`;
+            const actionsCell = row.insertCell(5);
             const delBtn = document.createElement('button');
             delBtn.innerHTML = '<i class="fas fa-trash"></i>';
             delBtn.className = 'danger';
             delBtn.onclick = () => deleteEmployee(emp.id);
             actionsCell.appendChild(delBtn);
         }
+        // Навешиваем обработчики на кликабельные имена
+        document.querySelectorAll('.clickable-name').forEach(el => {
+            el.addEventListener('click', () => showEmployeeHistory(el.dataset.id, el.dataset.name));
+        });
+    }
+
+    async function showEmployeeHistory(empId, empName) {
+        modalTitle.innerText = `История выдач: ${empName}`;
+        modalHistoryList.innerHTML = 'Загрузка...';
+        modal.style.display = 'flex';
+        try {
+            const resp = await fetch(`/employee_history/${empId}`);
+            const data = await resp.json();
+            if (data.length === 0) {
+                modalHistoryList.innerHTML = '<p>Нет записей о выдачах/возвратах</p>';
+                return;
+            }
+            let html = '<table><thead><tr><th>Инструмент</th><th>Действие</th><th>Дата и время</th><th>Контейнер</th></tr></thead><tbody>';
+            for (let rec of data) {
+                const action = rec.action === 'issue' ? 'Выдача' : 'Возврат';
+                const timestamp = new Date(rec.timestamp).toLocaleString();
+                html += `<tr><td>${rec.tool_name}</td><td>${action}</td><td>${timestamp}</td><td>${rec.container || '—'}</td></tr>`;
+            }
+            html += '</tbody></table>';
+            modalHistoryList.innerHTML = html;
+        } catch (err) {
+            modalHistoryList.innerHTML = '<p>Ошибка загрузки истории</p>';
+        }
+    }
+
+    function closeModalFunc() {
+        modal.style.display = 'none';
     }
 
     async function deleteEmployee(id) {
@@ -392,15 +658,17 @@
     async function addEmployee() {
         const name = document.getElementById('newEmpName').value.trim();
         const tab = document.getElementById('newEmpTab').value.trim();
-        if (!name || !tab) return alert('Заполните все поля');
+        const section = document.getElementById('newEmpSection').value.trim();
+        if (!name || !tab) return alert('Заполните ФИО и табельный номер');
         const resp = await fetch('/admin/employees', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, tab_number: tab })
+            body: JSON.stringify({ name, tab_number: tab, section })
         });
         if (resp.ok) {
             document.getElementById('newEmpName').value = '';
             document.getElementById('newEmpTab').value = '';
+            document.getElementById('newEmpSection').value = '';
             loadEmployees();
         } else alert((await resp.json()).detail);
     }
@@ -462,7 +730,7 @@
         } else alert((await resp.json()).detail);
     }
 
-    // Сканер с поддержкой переключения камеры
+    // Сканер с переключением камеры
     async function getVideoDevices() {
         videoInputDevices = await codeReader.listVideoInputDevices();
         if (videoInputDevices.length > 1) {
@@ -487,7 +755,8 @@
                     const text = result.getText();
                     scanResultDiv.innerHTML = `<i class="fas fa-check-circle"></i> Отсканировано: ${text}`;
                     handleScan(text);
-                    stopScanner();
+                    // Не останавливаем камеру после сканирования инструмента,
+                    // останавливаем только после завершения всей операции (выдачи или возврата)
                 }
                 if (err && !(err instanceof ZXing.NotFoundException)) console.error(err);
             });
@@ -526,6 +795,7 @@
             if (!tempToolQR) {
                 tempToolQR = scannedText;
                 scanResultDiv.innerHTML += `<br>📦 Инструмент принят. Теперь отсканируйте сотрудника.`;
+                // Камера остаётся активной, ждём следующего сканирования
             } else {
                 const toolQR = tempToolQR;
                 const employeeQR = scannedText;
@@ -540,15 +810,19 @@
                         showInfo(data.message);
                         loadIssued();
                         if (currentUser.role === 'admin') loadTools();
+                        // Операция завершена, закрываем сканер
+                        stopScanner();
                     } else {
                         showInfo(data.detail || 'Ошибка', true);
+                        // При ошибке остаёмся в режиме выдачи, но сбрасываем временный QR
+                        tempToolQR = null;
+                        scanResultDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Ошибка: ${data.detail}. Попробуйте снова.`;
                     }
                 } catch (err) {
                     showInfo('Ошибка сервера', true);
                 }
                 tempToolQR = null;
                 currentMode = null;
-                scannerArea.style.display = 'none';
             }
         } else if (currentMode === 'return') {
             try {
@@ -562,6 +836,7 @@
                     showInfo(data.message);
                     loadIssued();
                     if (currentUser.role === 'admin') loadTools();
+                    stopScanner();
                 } else {
                     showInfo(data.detail || 'Ошибка', true);
                 }
@@ -569,7 +844,6 @@
                 showInfo('Ошибка сервера', true);
             }
             currentMode = null;
-            scannerArea.style.display = 'none';
         }
     }
 
@@ -610,6 +884,7 @@
     if (addToolBtn) addToolBtn.onclick = addTool;
     if (addEmpBtn) addEmpBtn.onclick = addEmployee;
     if (addUserBtn) addUserBtn.onclick = addUser;
+    if (employeeSearch) employeeSearch.addEventListener('input', () => loadEmployees());
 
     tabs.forEach(tab => {
         tab.addEventListener('click', () => {
@@ -618,6 +893,11 @@
             switchTab(tabId);
         });
     });
+
+    closeModal.onclick = closeModalFunc;
+    window.onclick = function(event) {
+        if (event.target === modal) closeModalFunc();
+    };
 
     // Автообновление
     setInterval(() => {
